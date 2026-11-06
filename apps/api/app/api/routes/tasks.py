@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.app.core.database import get_session
-from apps.api.app.schemas.task import TaskCreate, TaskCreated, TaskRead
+from apps.api.app.schemas.task import TaskCreate, TaskCreated, TaskEventRead, TaskRead
 from apps.api.app.services import task_service
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -34,3 +34,15 @@ async def get_task(task_id: UUID, session: Session):
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+@router.get("/{task_id}/events", response_model=list[TaskEventRead])
+async def get_events(
+    task_id: UUID,
+    session: Session,
+    after_id: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+):
+    if await task_service.get_task(session, task_id) is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return await task_service.list_events(session, task_id, after_id, limit)

@@ -3,6 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 from agentos_core.contracts import TaskStatus
+from agentos_core.events import EventType
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StringConstraints
 
 
@@ -32,3 +33,17 @@ class TaskRead(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+    result: dict | None
+    error: str | None
+
+
+class TaskEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    task_id: UUID
+    type: EventType
+    attempt: int
+    message: str
+    data: dict
+    created_at: datetime

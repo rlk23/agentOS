@@ -3,11 +3,13 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from agentos_core.queue import TaskQueue
 from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
+from redis.asyncio import Redis
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from apps.api.app.main import create_app
@@ -62,3 +64,26 @@ async def client(database):
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             yield client
+
+
+@pytest.fixture
+def sessions(database):
+    return async_sessionmaker(database, expire_on_commit=False)
+
+
+@pytest.fixture
+async def queue():
+    redis = Redis.from_url(
+        os.environ.get("TEST_REDIS_URL", "redis://127.0.0.1:56380/0"),
+        decode_responses=True,
+        socket_connect_timeout=2,
+        socket_timeout=3,
+    )
+    queue = TaskQueue(redis, key=f"agentos:test:{uuid4().hex}")
+    try:
+        await redis.ping()
+        yield queue
+    finally:
+        # Only remove this test's unique key, never shared Redis data.
+        await redis.delete(queue.key)
+        await redis.aclose()

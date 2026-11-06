@@ -14,6 +14,7 @@ dependencies = [
   "asyncpg>=0.29,<1",
   "alembic>=1.13,<2",
   "pydantic-settings>=2.5,<3",
+  "redis>=5,<7",
 ]
 
 [dependency-groups]
@@ -24,7 +25,7 @@ packages = ["apps", "packages/agentos_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["integration: requires PostgreSQL (make test-db)"]
+markers = ["integration: requires PostgreSQL and Redis (make test-db)"]
 
 [tool.ruff]
 target-version = "py312"
