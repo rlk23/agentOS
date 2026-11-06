@@ -25,6 +25,7 @@ class Task(Base):
         CheckConstraint("length(trim(prompt)) > 0", name="ck_tasks_prompt_nonempty"),
         CheckConstraint("max_runtime_seconds BETWEEN 1 AND 86400", name="ck_tasks_runtime"),
         CheckConstraint("attempts >= 0", name="ck_tasks_attempts"),
+        CheckConstraint("execution_mode IN ('demo', 'agent')", name="ck_tasks_execution_mode"),
         Index("ix_tasks_created_at_id", "created_at", "id"),
         Index("ix_tasks_status", "status"),
         Index("ix_tasks_status_dispatch_after", "status", "dispatch_after"),
@@ -33,6 +34,7 @@ class Task(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     prompt: Mapped[str] = mapped_column(Text)
     repository: Mapped[str] = mapped_column(Text)
+    execution_mode: Mapped[str] = mapped_column(String(16), default="demo", server_default="demo")
     max_runtime_seconds: Mapped[int] = mapped_column(default=300, server_default="300")
     status: Mapped[TaskStatus] = mapped_column(
         Enum(TaskStatus, name="task_status"), default=TaskStatus.QUEUED, server_default="QUEUED"

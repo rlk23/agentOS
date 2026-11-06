@@ -87,3 +87,38 @@ async def queue():
         # Only remove this test's unique key, never shared Redis data.
         await redis.delete(queue.key)
         await redis.aclose()
+
+
+def pytest_addoption(parser):
+    parser.addoption("--run-sandbox", action="store_true", help="Run real Docker sandbox tests")
+    parser.addoption("--run-live", action="store_true", help="Call the real OpenAI API (billable)")
+
+
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        if "live" in item.keywords and not config.getoption("--run-live"):
+            item.add_marker(pytest.mark.skip(reason="Pass --run-live for a real API call"))
+        elif "sandbox" in item.keywords and not config.getoption("--run-sandbox"):
+            item.add_marker(pytest.mark.skip(reason="Pass --run-sandbox after make sandbox-image"))
+
+
+@pytest.fixture
+def repository_archive():
+    import io
+    import tarfile
+
+    files = {
+        "calculator.py": "def add(a, b):\n    return a - b\n",
+        "test_calculator.py": (
+            "from calculator import add\n\ndef test_add():\n    assert add(2, 3) == 5\n"
+        ),
+        "README.md": "Small Python fixture with one intentionally failing test.\n",
+    }
+    stream = io.BytesIO()
+    with tarfile.open(fileobj=stream, mode="w:gz") as archive:
+        for name, content in files.items():
+            data = content.encode()
+            member = tarfile.TarInfo("demo-main/" + name)
+            member.size = len(data)
+            archive.addfile(member, io.BytesIO(data))
+    return stream.getvalue()

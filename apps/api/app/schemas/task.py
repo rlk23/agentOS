@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from agentos_core.contracts import TaskStatus
 from agentos_core.events import EventType
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StringConstraints
+from agentos_core.repositories import github_repository
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StringConstraints, model_validator
 
 
 class TaskCreate(BaseModel):
@@ -12,7 +13,16 @@ class TaskCreate(BaseModel):
 
     prompt: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50000)]
     repository: HttpUrl = Field(max_length=2048)
+    execution_mode: Literal["demo", "agent"] = "demo"
     max_runtime_seconds: int = Field(default=300, ge=1, le=86400, strict=True)
+
+    @model_validator(mode="after")
+    def validate_agent_repository(self):
+        if self.execution_mode == "agent":
+            github_repository(str(self.repository))
+            if self.max_runtime_seconds > 600:
+                raise ValueError("Agent tasks currently support at most 600 seconds")
+        return self
 
 
 class TaskCreated(BaseModel):
@@ -26,6 +36,7 @@ class TaskRead(BaseModel):
     id: UUID
     prompt: str
     repository: str
+    execution_mode: Literal["demo", "agent"]
     max_runtime_seconds: int
     status: TaskStatus
     attempts: int

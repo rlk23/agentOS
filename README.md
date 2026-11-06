@@ -4,7 +4,9 @@ A monorepo for submitting coding tasks, executing them in isolated workers, and 
 
 The control plane and basic worker milestones are implemented. Submit a task, deliver its ID
 through Redis, and run a deterministic demo job with durable status, progress events, and results.
-The worker summarizes the prompt as text; it does not execute the requested coding task yet.
+Demo tasks summarize the prompt as text. Agent mode adds an LLM with file and command tools
+inside a resource-limited Docker container. See [agent execution](docs/agent-execution.md).
+Milestone 3 is implemented; its live-model acceptance test still requires a local API key.
 
 ## Local setup
 
@@ -70,9 +72,10 @@ and execution timestamps. Clients cannot set task state or ownership.
 it does not check migration readiness.
 
 Prompts must contain 1–50,000 characters after trimming. Repository URLs must be HTTP(S).
-Runtime defaults to 300 seconds and must be between 1 and 86,400 seconds. The worker applies
-an asynchronous timeout around the trusted demo executor. This is cooperative cancellation,
-not a sandbox or a hard resource limit. This milestone never clones repositories or runs
+Runtime defaults to 300 seconds and must be between 1 and 86,400 seconds. For demo tasks, the worker applies
+an asynchronous timeout around the trusted demo executor. Agent tasks are limited to 600 seconds
+and have additional command and container lifetime limits. This is cooperative cancellation,
+not a sandbox or a hard resource limit. Demo mode never clones repositories or runs
 commands. Invalid requests return 422; missing tasks return 404.
 
 Routes currently use `/tasks`. `/api/v1` versioning and cancellation are deferred.
@@ -127,7 +130,7 @@ The test database uses ephemeral storage. `uv.lock` pins the dependency versions
 ## Layout
 
 - `apps/api/app`: routes, configuration, models, schemas, and task services.
-- `apps/worker/app`: dispatcher/worker entry point, runner, and trusted demo executor.
+- `apps/worker/app`: dispatcher, worker, demo executor, OpenAI agent loop, and Docker sandbox.
 - `packages/agentos_core`: shared models, contracts, state transitions, scheduling, and Redis delivery.
 - `infra`: PostgreSQL and Redis Compose services, plus Alembic migrations.
 - `tests`: unit, real-service integration, and delivery fault injection tests.
@@ -141,10 +144,10 @@ The Next.js dashboard will be introduced in its own milestone.
 - [x] Create PostgreSQL task model and migrations.
 - [x] Implement task creation, listing, and retrieval with integration tests.
 - [x] Add Redis delivery and a worker for deterministic jobs.
-- [ ] Integrate an LLM agent with controlled tools and isolated execution.
+- [ ] Verify LLM agent integration with a live API key (implementation and Docker tests are ready).
 - [ ] Add crash recovery, leases, retries, and fault injection tests.
 - [ ] Build the Next.js task and log dashboard.
 
 Before any agent-generated command runs, introduce isolated, resource-limited containers.
-Do not execute untrusted commands on the host. The current trusted text-summary job is not
-an isolation boundary and must not be replaced by a shell or LLM tool executor without one.
+Do not execute untrusted commands on the host. Demo jobs remain trusted in-process code. Agent-generated commands run only inside the
+separate sandbox described in [agent execution](docs/agent-execution.md).

@@ -15,6 +15,8 @@ dependencies = [
   "alembic>=1.13,<2",
   "pydantic-settings>=2.5,<3",
   "redis>=5,<7",
+  "openai>=2,<3",
+  "httpx>=0.27,<1",
 ]
 
 [dependency-groups]
@@ -25,7 +27,11 @@ packages = ["apps", "packages/agentos_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["integration: requires PostgreSQL and Redis (make test-db)"]
+markers = [
+  "integration: requires PostgreSQL and Redis (make test-db)",
+  "sandbox: requires Docker and the AgentOS sandbox image (make sandbox-image)",
+  "live: opt-in real OpenAI API test (requires a key and incurs API usage)",
+]
 
 [tool.ruff]
 target-version = "py312"

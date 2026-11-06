@@ -22,6 +22,7 @@ class TaskClaim:
     prompt: str
     repository: str
     max_runtime_seconds: int
+    execution_mode: str = "demo"
 
 
 async def dispatch_once(
@@ -81,11 +82,24 @@ async def claim_task(sessions: SessionFactory, task_id: UUID, worker_id: str) ->
             )
         )
         return TaskClaim(
-            task.id, token, task.attempts, task.prompt, task.repository, task.max_runtime_seconds
+            task.id,
+            token,
+            task.attempts,
+            task.prompt,
+            task.repository,
+            task.max_runtime_seconds,
+            task.execution_mode,
         )
 
 
-async def record_progress(sessions: SessionFactory, claim: TaskClaim, message: str) -> bool:
+async def record_progress(
+    sessions: SessionFactory,
+    claim: TaskClaim,
+    message: str,
+    *,
+    event_type: EventType = EventType.PROGRESS,
+    data: dict | None = None,
+) -> bool:
     async with sessions.begin() as session:
         task = await session.scalar(
             select(Task)
@@ -101,9 +115,10 @@ async def record_progress(sessions: SessionFactory, claim: TaskClaim, message: s
         session.add(
             TaskEvent(
                 task_id=claim.id,
-                type=EventType.PROGRESS,
+                type=event_type,
                 attempt=claim.attempt,
                 message=message,
+                data=data or {},
             )
         )
         return True
@@ -137,7 +152,7 @@ async def finish_task(
                 type=status.value,
                 attempt=claim.attempt,
                 message=(
-                    "Deterministic job completed"
+                    "Task execution completed"
                     if status == TaskStatus.SUCCEEDED
                     else error or "Task execution ended"
                 ),

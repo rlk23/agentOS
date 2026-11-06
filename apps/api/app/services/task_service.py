@@ -12,6 +12,7 @@ async def create_task(session: AsyncSession, payload: TaskCreate) -> Task:
     task = Task(
         prompt=payload.prompt,
         repository=str(payload.repository),
+        execution_mode=payload.execution_mode,
         max_runtime_seconds=payload.max_runtime_seconds,
     )
     session.add(task)

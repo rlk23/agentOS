@@ -10,6 +10,7 @@ from agentos_core.scheduler import dispatch_once
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from apps.worker.app.agent import create_agent_executor
 from apps.worker.app.runner import Worker
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,12 @@ async def serve(role: str) -> None:
     )
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     queue = TaskQueue(redis, settings.redis_queue_key)
-    worker = Worker(sessions, queue, worker_id=f"worker-{uuid4().hex}")
+    worker = Worker(
+        sessions,
+        queue,
+        worker_id=f"worker-{uuid4().hex}",
+        agent_executor=create_agent_executor(sessions, settings),
+    )
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -67,7 +73,7 @@ async def serve(role: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="AgentOS deterministic worker and dispatcher")
+    parser = argparse.ArgumentParser(description="AgentOS worker and dispatcher")
     parser.add_argument("role", choices=["worker", "dispatcher"])
     args = parser.parse_args()
     logging.basicConfig(

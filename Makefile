@@ -1,4 +1,4 @@
-.PHONY: install db test-db migrate dev dispatcher worker test lint stop
+.PHONY: sandbox-image test-sandbox test-live install db test-db migrate dev dispatcher worker test lint stop
 
 install:
 	uv sync --locked
@@ -30,3 +30,12 @@ lint:
 
 stop:
 	docker compose -f infra/docker-compose.yml --profile test stop
+
+sandbox-image:
+	docker build -t agentos-sandbox:0.1 infra/sandbox
+
+test-sandbox: test-db sandbox-image
+	uv run pytest -q --run-sandbox
+
+test-live: test-db sandbox-image
+	uv run pytest -q --run-sandbox --run-live -m live

@@ -23,3 +23,18 @@ Implementation references:
 - [Redis ZADD](https://redis.io/docs/latest/commands/zadd/)
 - [Redis BZPOPMIN](https://redis.io/docs/latest/commands/bzpopmin/)
 - [SQLAlchemy row locking](https://docs.sqlalchemy.org/en/20/core/selectable.html)
+
+## Milestone 3 decisions
+
+- Use an explicit, bounded Responses API tool loop via the official OpenAI Python SDK. This
+  keeps tool validation, event persistence, budgets, and container cleanup visible in our code.
+- Preserve demo mode for existing tasks; agent mode is opt-in and cannot silently fall back.
+- Start with public GitHub default-branch snapshots and a Python/pytest image. No private repo
+  credentials, user Dockerfiles, runtime package downloads, or arbitrary fetch destinations.
+- Keep the provider key in trusted orchestration. Containers receive neither secrets nor mounts.
+- Use Docker resource and namespace controls with a root-owned lifetime supervisor and non-root
+  tools. Host orchestration never interprets generated shell text.
+- Store a bounded patch and explanation in the existing result JSON and action logs in events.
+  Do not apply or publish code changes automatically.
+- Treat live-model acceptance as pending until the key-backed test passes; scripted-model tests
+  alone do not establish real model access or performance.

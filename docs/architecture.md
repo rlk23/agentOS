@@ -38,3 +38,16 @@ is not an isolation boundary.
 
 The dashboard will use HTTP APIs. Events are exposed in ID order with an `after_id` cursor;
 polling is sufficient initially. Cancellation, subprocess logs, and execution artifacts are deferred.
+
+## Coding-agent mode
+
+Tasks now persist an explicit `execution_mode` (`demo` by default, or `agent`). The existing
+queue and claim protocol are unchanged. Agent attempts use the OpenAI Responses API with
+strict function tools for reading files, writing files, and executing container commands.
+The worker stores tool-call, tool-result, and final-summary events under its existing claim.
+
+Public GitHub snapshots are downloaded without credentials and extracted only inside a
+resource-limited container. Generated commands have no network or host filesystem access.
+The model client remains outside the container, so its API key is not exposed to repository
+code. A synthetic Git baseline supports returning a bounded patch with the final result.
+See [agent execution](agent-execution.md) for setup, boundaries, and known limitations.

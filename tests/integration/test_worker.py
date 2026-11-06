@@ -143,7 +143,7 @@ async def test_executor_failure_is_recorded_and_worker_can_continue(client, sess
     assert await worker.run_once(block=False)
     task = (await client.get(f"/tasks/{failed_id}")).json()
     assert task["status"] == "FAILED"
-    assert task["error"] == "Deterministic job failed (ValueError)"
+    assert task["error"] == "Task execution failed (ValueError)"
     assert task["result"] is None and task["completed_at"]
     history = (await client.get(f"/tasks/{failed_id}/events")).json()
     assert history[-1]["type"] == "FAILED"
@@ -177,7 +177,7 @@ async def test_executor_timeout_error_is_not_misreported_as_runtime_limit(client
     await Worker(sessions, queue, "worker", executor=failing_job).run_once(block=False)
     task = (await client.get(f"/tasks/{task_id}")).json()
     assert task["status"] == "FAILED"
-    assert task["error"] == "Deterministic job failed (TimeoutError)"
+    assert task["error"] == "Task execution failed (TimeoutError)"
 
 
 async def test_prompt_is_data_not_a_command(client, sessions, queue, tmp_path):
