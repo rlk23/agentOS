@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentos"
+version = "0.1.0"
+description = "A durable control plane for coding agents"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.30,<1",
+  "sqlalchemy[asyncio]>=2.0,<2.1",
+  "asyncpg>=0.29,<1",
+  "alembic>=1.13,<2",
+  "pydantic-settings>=2.5,<3",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "httpx>=0.27,<1", "ruff>=0.9,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["apps", "packages/agentos_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: requires PostgreSQL (make test-db)"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
